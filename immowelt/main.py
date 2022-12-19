@@ -164,7 +164,9 @@ def get_current_listings(scraper, url, max_pages=np.inf):#
     return df
 
 
-def main(DATA_PATH, search_url, safe_mode=False):
+def main(DATA_PATH, search_url, scraper, safe_mode=False, current_time=None):
+
+    print(os.listdir(DATA_PATH))
 
     # html = request_to_html(search_url, scraper)
 
@@ -195,12 +197,15 @@ def main(DATA_PATH, search_url, safe_mode=False):
             os.path.join(DATA_PATH, f"{str(id_-1)}_scraping_results.csv")
             , index_col=0) # open that version
 
-    old_df = df_new[["id", "price"]].merge(old_df, how="right", right_on="id", left_on="id")
+    print("Number of old Listings: ", len(old_df))
+    old_df = df_new[["id", "price"]].merge(old_df, how="inner", right_on="id", left_on="id").drop_duplicates("id")
+    print("Number of new listings: ", len(old_df))
+
     old_df = old_df.drop(columns="price_y")
     old_df = old_df.rename(columns={"price_x": "price"})
 
     
-    for i in range(len(to_scrape)): # 
+    for i in range(len(to_scrape)):
         data = to_scrape.iloc[i]
         url = data["link"]
         print(url)
@@ -227,18 +232,22 @@ def main(DATA_PATH, search_url, safe_mode=False):
             to_add,
         ignore_index=True)
 
-        old_df.to_csv(os.path.join(DATA_PATH,f"{id_}_scraping_results_.csv"))
+        old_df.to_csv(os.path.join(DATA_PATH,f"{id_}_scraping_results.csv"))
 
+    old_df.to_csv(os.path.join(DATA_PATH,f"{id_}_scraping_results.csv"))
 
+    return old_df
 
 if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H")
     scraper = cloudscraper.create_scraper()
 
     main(
-        "immowelt\\data",
+        "immowelt/data",
         "https://www.immowelt.de/liste/dresden/wohnungen/kaufen?d=true&sd=DESC&sf=RELEVANCE&sp=",
-        True
+        scraper,
+        True,
+        current_time
     )
 
 
